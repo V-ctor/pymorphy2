@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <allowed_link_types>
-    <link_type id="1"/> <!--all connections with link type id 1 is allowed-->
+    <link_type id="1"/>
     <link_type id="2"/>
     <link_type id="3"/>
     <link_type id="4"/>
@@ -18,7 +18,7 @@
     <link_type id="17"/>
     <link_type id="18"/>
     <link_type id="19"/>
-    <link_type id="21"> <!--for link type connection 21 only link 268160 and 268159 are allowed-->
+    <link_type id="21">
         <link id="268160"/>
         <link id="268159"/>
     </link_type>

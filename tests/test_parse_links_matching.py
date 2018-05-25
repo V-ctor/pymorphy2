@@ -23,16 +23,18 @@ class TestToyDictionary:
         'links_matching.xml'
     )
 
-    def test_parse_xml(self):
+    def test_parse_xml_result_must_contains(self):
         links_matching = parse_links_matching_xml(self.XML_PATH)
+        assert len(links_matching) == 19, 'Result size is not 19'
 
         assert links_matching[1] == []
         assert links_matching[2] == []
         assert links_matching[3] == []
-        # assert links_matching[7] is None
-        assert 7 not in links_matching, 'Array contains unnecessary element '
-        links = links_matching[21]
 
-        assert 268164 in links, 'Array does not contains necessary element '
-        assert 268221 in links, 'Array does not contains necessary element '
-        assert len(links) == 2, 'Array size is not 2'
+        assert links_matching[21] == [268160, 268159], 'Array does not contains necessary element '
+
+    def test_parse_xml_must_not_contains(self):
+        links_matching = parse_links_matching_xml(self.XML_PATH)
+        assert len(links_matching) == 19, 'Result size is not 19'
+
+        assert 7 not in links_matching, 'Array contains unnecessary element '
