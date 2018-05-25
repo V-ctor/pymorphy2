@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<allowed_link_types>
+    <link_type id="1"/> <!--all connections with link type id 1 is allowed-->
+    <link_type id="2"/>
+    <link_type id="3"/>
+    <link_type id="4"/>
+    <link_type id="5"/>
+    <link_type id="6"/>
+    <link_type id="8"/>
+    <link_type id="9"/>
+    <link_type id="10"/>
+    <link_type id="11"/>
+    <link_type id="12"/>
+    <link_type id="13"/>
+    <link_type id="14"/>
+    <link_type id="15"/>
+    <link_type id="16"/>
+    <link_type id="17"/>
+    <link_type id="18"/>
+    <link_type id="19"/>
+    <link_type id="21"> <!--for link type connection 21 only link 268160 and 268159 are allowed-->
+        <link id="268160"/>
+        <link id="268159"/>
+    </link_type>
+    <type id="22"/>
+    <type id="23"/>
+    <type id="24"/>
+    <type id="25"/>
+    <type id="26"/>
+    <type id="27"/>
+</allowed_link_types>

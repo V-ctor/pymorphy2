@@ -12,6 +12,8 @@ import itertools
 import array
 import operator
 
+from pymorphy2.opencorpora_dict.parse_links_matching import parse_links_matching_xml
+
 try:
     izip = itertools.izip
 except AttributeError:
@@ -26,7 +28,6 @@ from pymorphy2.utils import (
 
 logger = logging.getLogger(__name__)
 
-
 CompiledDictionary = collections.namedtuple(
     'CompiledDictionary',
     'gramtab suffixes paradigms words_dawg prediction_suffixes_dawgs parsed_dict compile_options'
@@ -36,7 +37,7 @@ _pick_second_item = operator.itemgetter(1)
 
 
 def convert_to_pymorphy2(opencorpora_dict_path, out_path, source_name,
-                         language_code, overwrite=False, compile_options=None):
+                         language_code, overwrite=False, compile_options=None, links_matching_path=None):
     """
     Convert a dictionary from OpenCorpora XML format to
     Pymorphy2 compacted format.
@@ -51,15 +52,21 @@ def convert_to_pymorphy2(opencorpora_dict_path, out_path, source_name,
     if not _create_out_path(out_path, overwrite):
         return
 
+    links_matching = read_links_matching(links_matching_path)
+
     parsed_dict = parse_opencorpora_xml(opencorpora_dict_path)
     simplify_tags(parsed_dict)
     drop_unsupported_parses(parsed_dict)
-    compiled_dict = compile_parsed_dict(parsed_dict, compile_options)
+    compiled_dict = compile_parsed_dict(parsed_dict, compile_options, links_matching)
     save_compiled_dict(compiled_dict, out_path,
                        source_name=source_name, language_code=language_code)
 
 
-def compile_parsed_dict(parsed_dict, compile_options=None):
+def read_links_matching(links_matching_file_name):
+    return parse_links_matching_xml(links_matching_file_name)
+
+
+def compile_parsed_dict(parsed_dict, compile_options=None, allowed_link_types=None):
     """
     Return compacted dictionary data.
     """
@@ -79,7 +86,7 @@ def compile_parsed_dict(parsed_dict, compile_options=None):
     paradigm_ids = dict()
 
     logger.info("inlining lexeme derivational rules")
-    lexemes = _join_lexemes(parsed_dict.lexemes, parsed_dict.links)
+    lexemes = _join_lexemes(parsed_dict.lexemes, parsed_dict.links, allowed_link_types)
     logger.info("lexemes after link inlining: %s", len(lexemes))
 
     logger.info('building paradigms')
@@ -107,7 +114,7 @@ def compile_parsed_dict(parsed_dict, compile_options=None):
         paradigm_popularity[para_id] += 1
 
         for idx, (suff, tag, pref) in enumerate(paradigm):
-            form = pref+stem+suff
+            form = pref + stem + suff
             words.append(
                 (form, (para_id, idx))
             )
@@ -115,7 +122,6 @@ def compile_parsed_dict(parsed_dict, compile_options=None):
         if not (index % 10000):
             word = paradigm[0][2] + stem + paradigm[0][0]
             logger.debug("%20s %15s %15s %15s", word, len(gramtab), len(words), len(paradigms))
-
 
     logger.debug("%20s %15s %15s %15s", "total:", len(gramtab), len(words), len(paradigms))
     logger.debug("linearizing paradigms")
@@ -133,6 +139,7 @@ def compile_parsed_dict(parsed_dict, compile_options=None):
     paradigm_prefix_ids = dict(
         (pref, idx) for idx, pref in enumerate(paradigm_prefixes)
     )
+
     def fix_strings(paradigm):
         """ Replace suffix and prefix with the respective id numbers. """
         para = []
@@ -179,7 +186,7 @@ def compile_parsed_dict(parsed_dict, compile_options=None):
     )
 
 
-def _join_lexemes(lexemes, links):
+def _join_lexemes(lexemes, links, allowed_link_types=None):
     """
     Combine linked lexemes to a single lexeme.
     """
@@ -229,9 +236,17 @@ def _join_lexemes(lexemes, links):
         del lm[:]
         moves[from_id] = to_id
 
-    for link_start, link_end, type_id in links:
-        if type_id in EXCLUDED_LINK_TYPES:
-            continue
+    for link_id, link_start, link_end, type_id in links:
+        if (allowed_link_types is None):
+            if type_id in EXCLUDED_LINK_TYPES:
+                continue
+        else:
+            int_type_id = int(type_id)
+            if int_type_id not in allowed_link_types:
+                continue
+            else:
+                if allowed_link_types[int_type_id]!=[] and int(link_id) not in allowed_link_types[int_type_id]:
+                    continue
 
 #        if type_id not in ALLOWED_LINK_TYPES:
 #            continue
@@ -267,7 +282,7 @@ def _to_paradigm(lexeme, paradigm_prefixes):
             prefixes = [''] * len(tags)
 
     suffixes = (
-        form[len(pref)+len(stem):]
+        form[len(pref) + len(stem):]
         for form, pref in zip(forms, prefixes)
     )
     return stem, tuple(zip(suffixes, tags, prefixes))
@@ -276,7 +291,6 @@ def _to_paradigm(lexeme, paradigm_prefixes):
 def _suffixes_prediction_data(words, paradigm_popularity, gramtab, paradigms, suffixes,
                               min_ending_freq, min_paradigm_popularity, max_suffix_length,
                               paradigm_prefixes):
-
     logger.debug('calculating prediction data: removing non-productive paradigms..')
     productive_paradigms = _popular_keys(paradigm_popularity, min_paradigm_popularity)
 
@@ -289,8 +303,8 @@ def _suffixes_prediction_data(words, paradigm_popularity, gramtab, paradigms, su
     prefix_endings = {}
     for form_prefix_id in range(len(paradigm_prefixes)):
         prefix_endings[form_prefix_id] = collections.defaultdict(
-                                    lambda: collections.defaultdict(
-                                        lambda: collections.defaultdict(int)))
+            lambda: collections.defaultdict(
+                lambda: collections.defaultdict(int)))
 
     logger.debug('calculating prediction data: checking word endings..')
     for word, (para_id, idx) in with_progress(words, "Checking word endings"):
@@ -303,11 +317,11 @@ def _suffixes_prediction_data(words, paradigm_popularity, gramtab, paradigms, su
         form_count = len(paradigm) // 3
 
         tag = gramtab[paradigm[form_count + idx]]
-        form_prefix_id = paradigm[2*form_count + idx]
+        form_prefix_id = paradigm[2 * form_count + idx]
         form_prefix = paradigm_prefixes[form_prefix_id]
         form_suffix = suffixes[paradigm[idx]]
 
-        assert len(word) >= len(form_prefix+form_suffix), word
+        assert len(word) >= len(form_prefix + form_suffix), word
         assert word.startswith(form_prefix), word
         assert word.endswith(form_suffix), word
 
@@ -317,7 +331,7 @@ def _suffixes_prediction_data(words, paradigm_popularity, gramtab, paradigms, su
 
         POS = tuple(tag.replace(' ', ',', 1).split(','))[0]
 
-        for i in range(max(len(form_suffix), 1), max_suffix_length+1): #was: 1,2,3,4,5
+        for i in range(max(len(form_suffix), 1), max_suffix_length + 1):  # was: 1,2,3,4,5
             word_end = word[-i:]
             ending_counts[word_end] += 1
             prefix_endings[form_prefix_id][word_end][POS][(para_id, idx)] += 1
@@ -383,4 +397,3 @@ def _create_out_path(out_path, overwrite=False):
             logger.warning("Output folder already exists!")
             return False
     return True
-

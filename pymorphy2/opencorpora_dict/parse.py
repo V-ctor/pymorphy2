@@ -84,6 +84,7 @@ def parse_opencorpora_xml(filename):
 
         elif elem.tag == 'link':
             link_tuple = (
+                elem.get('id'),
                 elem.get('from'),
                 elem.get('to'),
                 elem.get('type'),

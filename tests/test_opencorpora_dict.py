@@ -22,6 +22,12 @@ class TestToyDictionary:
         'dev_data',
         'toy_dict.xml'
     )
+    ALLOWED_LINK_TYPES_XML_PATH = os.path.join(
+        os.path.dirname(__file__),
+        '..',
+        'dev_data',
+        'links_matching.xml'
+    )
 
     def test_parse_xml(self):
         dct = parse_opencorpora_xml(self.XML_PATH)
@@ -62,6 +68,41 @@ class TestToyDictionary:
         convert_to_pymorphy2(self.XML_PATH, out_path,
                              source_name='toy', language_code='ru',
                              overwrite=True, compile_options=options)
+
+        # use it
+        morph = pymorphy2.MorphAnalyzer(out_path)
+        assert morph.tag('ёжиться') == [morph.TagClass('INFN,impf,intr')]
+
+        # tag simplification should work
+        assert morph.tag("ёж")[0] == morph.tag("ванька-встанька")[0]
+
+        # Init tags should be handled correctly
+        assert 'Init' in morph.tag("Ц")[0]
+        assert 'Init' not in morph.tag("ц")[0]
+
+        # normalization tests
+        assert morph.normal_forms('абсурднее') == ['абсурдный']
+        assert morph.normal_forms('а') == ['а']
+        # lexemes
+        # assert morph.parse('век') == ['абсурдный']
+
+    def test_convert_to_pymorphy2_with_allowed_link_types(self, tmpdir):
+
+        try:
+            assert_can_create()
+        except NotImplementedError as e:
+            raise pytest.skip(e)
+
+        # create a dictionary
+        out_path = str(tmpdir.join('dicts'))
+        options = {
+            'min_paradigm_popularity': 0,
+            'min_ending_freq': 0,
+            'paradigm_prefixes': lang.ru.PARADIGM_PREFIXES,
+        }
+        convert_to_pymorphy2(self.XML_PATH, out_path,
+                             source_name='toy', language_code='ru',
+                             overwrite=True, compile_options=options, links_matching_path=self.ALLOWED_LINK_TYPES_XML_PATH)
 
         # use it
         morph = pymorphy2.MorphAnalyzer(out_path)
