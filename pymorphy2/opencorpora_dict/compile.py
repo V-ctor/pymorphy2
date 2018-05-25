@@ -52,7 +52,7 @@ def convert_to_pymorphy2(opencorpora_dict_path, out_path, source_name,
     if not _create_out_path(out_path, overwrite):
         return
 
-    links_matching = read_links_matching(links_matching_path)
+    links_matching = read_links_matching(links_matching_path) if links_matching_path is not None else None
 
     parsed_dict = parse_opencorpora_xml(opencorpora_dict_path)
     simplify_tags(parsed_dict)
