@@ -15,7 +15,6 @@ from pymorphy2 import lang
 
 
 class TestToyDictionary:
-
     XML_PATH = os.path.join(
         os.path.dirname(__file__),
         '..',
@@ -34,8 +33,8 @@ class TestToyDictionary:
         assert dct.version == '0.92'
         assert dct.revision == '389440'
 
-        assert dct.links[0] == ('5', '6', '1')
-        assert len(dct.links) == 13
+        assert dct.links[0] == ('1', '5', '6', '1')
+        assert len(dct.links) == 17
 
         assert dct.grammemes[1] == ('NOUN', 'POST', 'СУЩ', 'имя существительное')
         assert len(dct.grammemes) == 114
@@ -102,7 +101,8 @@ class TestToyDictionary:
         }
         convert_to_pymorphy2(self.XML_PATH, out_path,
                              source_name='toy', language_code='ru',
-                             overwrite=True, compile_options=options, links_matching_path=self.ALLOWED_LINK_TYPES_XML_PATH)
+                             overwrite=True, compile_options=options,
+                             links_matching_path=self.ALLOWED_LINK_TYPES_XML_PATH)
 
         # use it
         morph = pymorphy2.MorphAnalyzer(out_path)
@@ -201,5 +201,3 @@ class TestToParadigm(object):
         stem, forms = _to_paradigm(lexeme, lang.ru.PARADIGM_PREFIXES)
         assert stem == 'английски'
         assert forms == (("", 1, ""),)
-
-
