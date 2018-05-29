@@ -66,9 +66,8 @@ def test_does_element_contain_allowed_link_types_tag_test(tag, expected):
 ])
 def test_add_links_from_link_type(xml, expected):
     element = etree.fromstring(xml)
-    links = []
-    add_links_from_link_type(element, links)
-    assert expected == links
+    actual = add_links_from_link_type(element)
+    assert expected == actual
 
 
 @pytest.mark.parametrize("xml, expected", [

@@ -47,19 +47,19 @@ def parse_links_matching_xml(filename):
 
 def add_allowed_link_types(element, allowed_link_types):
     for allowed_link_type in element.getchildren():
-        links = []
         if does_element_contain_link_types_tag(allowed_link_type):
             id = get_id_from_link_type(allowed_link_type)
-            allowed_link_types[id] = links
-            add_links_from_link_type(allowed_link_type, links)
+            allowed_link_types[id] = add_links_from_link_type(allowed_link_type)
 
 
-def add_links_from_link_type(parent_element, link_list):
+def add_links_from_link_type(parent_element):
+    links = []
     for link in parent_element.getchildren():
         id = get_id_from_link(link)
         if id is not None:
-            link_list.append(id)
+            links.append(id)
         logger.info("%s => %s" % (link.tag, link.text))
+    return links
 
 
 def get_id_from_link_type(element):
