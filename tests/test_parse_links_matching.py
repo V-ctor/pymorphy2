@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals
+
+import io
 import os
 
 import pytest
@@ -11,7 +13,7 @@ try:
     from lxml import etree
 
     print("running with lxml.etree")
-    from lxml.etree import iterparse
+    from lxml.etree import iterparse, XMLSyntaxError
 
 
     def xml_clear_elem(elem):
@@ -97,6 +99,47 @@ def test_add_allowed_link_types(xml, expected):
     element = etree.fromstring(xml)
     actual = add_allowed_link_types(element)
     assert expected == actual
+
+
+@pytest.mark.parametrize("xml, expected", [
+    ("""<unknown_tag>
+        </unknown_tag>
+    """, {}),
+    ("""<allowed_link_types>
+        </allowed_link_types>
+    """, {}),
+    ("""<allowed_link_types>
+            <link_type id="1"/> <!--all connections with link type id 1 is allowed-->
+        </allowed_link_types>
+    """, {1: []}),
+    ("""<allowed_link_types>
+            <link_type id="1"/> <!--all connections with link type id 1 is allowed-->
+            <link_type id="2"/>
+        </allowed_link_types>
+    """, {1: [], 2: []}),
+    ("""<allowed_link_types>
+            <link_type id="1"/> <!--all connections with link type id 1 is allowed-->
+            <link_type id="2"/>
+            <link_type id="21">
+                <link id="100"/> <!--these links are allowed-->
+                <link id="200"/>
+            </link_type>
+        </allowed_link_types>
+    """, {1: [], 2: [], 21: [100, 200]})
+])
+def test_parse_links_matching_xml(xml, expected):
+    file = io.StringIO(xml)
+    actual = parse_links_matching_xml(file)
+    assert expected == actual
+
+
+@pytest.mark.parametrize("xml", [
+    ""
+])
+def test_parse_links_matching_xml(xml):
+    file = io.StringIO(xml)
+    with pytest.raises(XMLSyntaxError):
+        parse_links_matching_xml(file)
 
 
 class TestLinksMatchingParser:

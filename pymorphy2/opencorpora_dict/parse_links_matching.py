@@ -11,7 +11,7 @@ try:
     from lxml import etree
 
     print("running with lxml.etree")
-    from lxml.etree import iterparse
+    from lxml.etree import iterparse, XMLSyntaxError
 
 
     def xml_clear_elem(elem):
@@ -38,7 +38,11 @@ def parse_links_matching_xml(filename):
 
     logger.info("Parsing file links matching dictionary v%s", filename)
 
-    root = etree.parse(filename).getroot()
+    try:
+        root = etree.parse(filename).getroot()
+    except XMLSyntaxError:
+        logger.error("Error during parsing root element in links matching file. Please correct the xml and try again.")
+        raise
 
     return add_allowed_link_types(root) if does_element_contain_allowed_link_types_tag(root) else {}
 
