@@ -35,21 +35,21 @@ ParsedDictionary = collections.namedtuple('ParsedDictionary', 'lexemes links gra
 
 
 def parse_links_matching_xml(filename):
-    allowed_link_types = {}
 
     logger.info("Parsing file links matching dictionary v%s", filename)
 
     root = etree.parse(filename).getroot()
-    if does_element_contain_allowed_link_types_tag(root):
-        add_allowed_link_types(root, allowed_link_types)
-    return allowed_link_types
+
+    return add_allowed_link_types(root) if does_element_contain_allowed_link_types_tag(root) else {}
 
 
-def add_allowed_link_types(element, allowed_link_types):
+def add_allowed_link_types(element):
+    allowed_link_types = {}
     for allowed_link_type in element.getchildren():
         if does_element_contain_link_types_tag(allowed_link_type):
             id = get_id_from_link_type(allowed_link_type)
             allowed_link_types[id] = add_links_from_link_type(allowed_link_type)
+    return allowed_link_types
 
 
 def add_links_from_link_type(parent_element):

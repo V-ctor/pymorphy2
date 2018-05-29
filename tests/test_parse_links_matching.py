@@ -95,9 +95,8 @@ def test_add_links_from_link_type(xml, expected):
 ])
 def test_add_allowed_link_types(xml, expected):
     element = etree.fromstring(xml)
-    links = {}
-    add_allowed_link_types(element, links)
-    assert expected == links
+    actual = add_allowed_link_types(element)
+    assert expected == actual
 
 
 class TestLinksMatchingParser:
